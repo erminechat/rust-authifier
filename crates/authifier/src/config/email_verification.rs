@@ -1,5 +1,5 @@
 use lettre::{
-    transport::smtp::{authentication::Credentials, client::Tls},
+    transport::smtp::{authentication::{Credentials, Mechanism}, client::Tls},
     SmtpTransport,
 };
 
@@ -108,31 +108,27 @@ pub enum EmailVerificationConfig {
 impl SMTPSettings {
     /// Create SMTP transport
     pub fn create_transport(&self) -> SmtpTransport {
-        let relay = if let Some(true) = self.use_starttls {
-            SmtpTransport::starttls_relay(&self.host).unwrap()
-        } else {
-            SmtpTransport::relay(&self.host).unwrap()
-        };
+    let builder = if let Some(true) = self.use_starttls {
+        SmtpTransport::starttls_relay(&self.host).unwrap()
+    } else if let Some(true) = self.use_tls {
+        SmtpTransport::relay(&self.host).unwrap()
+    } else {
+        SmtpTransport::builder_dangerous(&self.host)
+    };
 
-        
-        let relay = if let Some(port) = self.port {
-            relay.port(port.try_into().unwrap())
-        } else {
-            relay
-        };
+    let builder = if let Some(port) = self.port {
+        builder.port(port.try_into().unwrap())
+    } else {
+        builder
+    };
 
-        let relay = if let Some(false) = self.use_tls {
-            relay.tls(Tls::None)
-        } else {
-            relay
-        };
-
-        relay
-            .credentials(Credentials::new(
-                self.username.clone(),
-                self.password.clone(),
-            ))
-            .build()
+    builder
+        .credentials(Credentials::new(
+            self.username.clone(),
+            self.password.clone(),
+        ))
+        .authentication(vec![Mechanism::Plain, Mechanism::Login])
+        .build()
     }
 
     /// Render an email template

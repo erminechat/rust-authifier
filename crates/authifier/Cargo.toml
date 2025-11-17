@@ -81,5 +81,5 @@ totp-lite = "2.0.0"
 rust-argon2 = "1.0.0"
 
 # Email
-lettre = "0.10.0-alpha.4"
+lettre = "0.11.19"
 handlebars = "4.3.0"
